@@ -12,8 +12,8 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      height: 100vh;
+      padding: 30px;
+      min-height: 100vh;
       margin: 0;
     }
     h1 {
@@ -21,15 +21,17 @@
       margin-bottom: 20px;
       text-shadow: 2px 2px 6px rgba(0,0,0,0.3);
     }
-    textarea {
+    select, textarea {
       width: 80%;
-      height: 100px;
       border-radius: 12px;
       border: none;
-      padding: 15px;
+      padding: 12px;
       font-size: 1rem;
       outline: none;
       margin-bottom: 15px;
+    }
+    textarea {
+      height: 100px;
     }
     button {
       padding: 12px 25px;
@@ -58,26 +60,59 @@
 </head>
 <body>
   <h1>Rock vs Mine Predictor</h1>
-  <textarea id="inputValues" placeholder="Enter 60 comma-separated values"></textarea>
+
+  <p>🔽 Pick a sample from dataset:</p>
+  <select id="sampleDropdown"></select>
+
+  <p>Or enter your own values (60 comma-separated):</p>
+  <textarea id="inputValues" placeholder="Enter 60 values here"></textarea>
+  
   <br>
   <button onclick="predict()">🔮 Predict</button>
   <div id="result"></div>
 
   <script>
+    const dropdown = document.getElementById("sampleDropdown");
+    const textarea = document.getElementById("inputValues");
+
+    // Load CSV file from GitHub Pages (must be in same repo as index.html)
+    fetch("Sonar Dataset.csv")
+      .then(res => res.text())
+      .then(data => {
+        const rows = data.trim().split("\n");
+        // Take first 20 samples for dropdown
+        rows.slice(0, 20).forEach((row, i) => {
+          const cols = row.split(",");
+          const label = cols[60]; // Last column is label (R or M)
+          const features = cols.slice(0, 60).join(",");
+          const option = document.createElement("option");
+          option.value = features;
+          option.text = `Sample ${i+1} (${label})`;
+          dropdown.appendChild(option);
+        });
+
+        // Auto-fill textarea with first sample
+        textarea.value = dropdown.options[0].value;
+      });
+
+    // Update textarea when dropdown changes
+    dropdown.addEventListener("change", () => {
+      textarea.value = dropdown.value;
+    });
+
     async function predict() {
-      const input = document.getElementById("inputValues").value.trim();
+      const input = textarea.value.trim();
       if (!input) {
         alert("Please enter values!");
         return;
       }
-
       const values = input.split(",").map(v => parseFloat(v.trim()));
       if (values.length !== 60) {
         alert("⚠️ You must enter exactly 60 values!");
         return;
       }
 
-      const apiUrl = "https://mayurbhati2110-RockvsMine.hf.space/run/predict"; // CHANGE THIS
+      const apiUrl = "https://<your-username>-<your-space-name>.hf.space/run/predict"; // CHANGE THIS
 
       document.getElementById("result").style.display = "block";
       document.getElementById("result").innerText = "⏳ Predicting...";
@@ -89,7 +124,6 @@
           body: JSON.stringify({ data: [input] })
         });
         const result = await response.json();
-
         const prediction = result.data[0];
 
         document.getElementById("result").innerText = "✅ " + prediction;
