@@ -90,9 +90,19 @@
   <button onclick="predict()">🔮 Predict</button>
   <div id="result"></div>
 
-  <script>
+  <!-- ✅ Hugging Face Gradio Client -->
+  <script type="module">
+    import { Client } from "https://cdn.jsdelivr.net/npm/@gradio/client/+esm";
+
     const dropdown = document.getElementById("sampleDropdown");
     const textarea = document.getElementById("inputValues");
+    const resultBox = document.getElementById("result");
+
+    // Connect to your Hugging Face Space
+    let client;
+    (async () => {
+      client = await Client.connect("mayurbhati2110/RockvsMine");
+    })();
 
     // Shuffle helper
     function shuffle(array) {
@@ -103,7 +113,7 @@
       return array;
     }
 
-    // Load CSV
+    // Load CSV and populate dropdown
     fetch("./Sonar Dataset.csv")
       .then(res => {
         if (!res.ok) throw new Error("CSV not found. Ensure 'Sonar Dataset.csv' is in the same folder as index.html.");
@@ -123,12 +133,11 @@
           if (label === "M") mineSamples.push({ label, features });
         });
 
-        // Shuffle both groups
-        rockSamples = shuffle(rockSamples);
-        mineSamples = shuffle(mineSamples);
+        // Shuffle and take 10 random Rock + 10 random Mine
+        rockSamples = shuffle(rockSamples).slice(0, 10);
+        mineSamples = shuffle(mineSamples).slice(0, 10);
 
-        // Take 10 random Rock + 10 random Mine
-        const selected = rockSamples.slice(0, 10).concat(mineSamples.slice(0, 10));
+        const selected = rockSamples.concat(mineSamples);
 
         // Fill dropdown
         dropdown.innerHTML = "";
@@ -154,65 +163,52 @@
       textarea.value = dropdown.value;
     });
 
-    async function predict() {
-  const input = textarea.value.trim();
-  if (!input) {
-    alert("Please enter values!");
-    return;
-  }
-  const values = input.split(",").map(v => parseFloat(v.trim()));
-  if (values.length !== 60) {
-    alert("⚠️ You must enter exactly 60 values!");
-    return;
-  }
+    // ✅ Predict function using Hugging Face JS client
+    window.predict = async function() {
+      const input = textarea.value.trim();
+      if (!input) {
+        alert("Please enter values!");
+        return;
+      }
+      const values = input.split(",").map(v => parseFloat(v.trim()));
+      if (values.length !== 60) {
+        alert("⚠️ You must enter exactly 60 values!");
+        return;
+      }
 
-  const apiUrl = "https://mayurbhati2110-RockvsMine.hf.space/predict/";
+      resultBox.style.display = "block";
+      resultBox.innerText = "⏳ Predicting...";
 
-  const resultBox = document.getElementById("result");
-  resultBox.style.display = "block";
-  resultBox.innerText = "⏳ Predicting...";
+      try {
+        const result = await client.predict("/predict", {
+          features: input
+        });
 
-  try {
-    const response = await fetch(apiUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ data: [input] })
-    });
+        const prediction = result.data[0];
 
-    const result = await response.json();
-    console.log("API Response:", result); // 🔍 Debugging line
+        // 🎨 Color-coded result
+        if (prediction.toLowerCase().includes("rock")) {
+          resultBox.style.background = "rgba(0, 200, 0, 0.3)";
+        } else if (prediction.toLowerCase().includes("mine")) {
+          resultBox.style.background = "rgba(200, 0, 0, 0.3)";
+        } else {
+          resultBox.style.background = "rgba(255,255,255,0.2)";
+        }
 
-    // ✅ Handle flexible response
-    let prediction = "Unknown";
-    if (result.data && result.data.length > 0) {
-      prediction = result.data[0];
-    } else if (result.output && result.output.data) {
-      prediction = result.output.data[0];
+        resultBox.innerText = "✅ " + prediction;
+
+        anime({
+          targets: '#result',
+          scale: [0.5, 1],
+          opacity: [0, 1],
+          duration: 800,
+          easing: 'easeOutElastic'
+        });
+      } catch (err) {
+        resultBox.innerText = "❌ Error: " + err.message;
+        console.error(err);
+      }
     }
-
-    // 🎨 Color-coded result
-    if (prediction.toLowerCase().includes("rock")) {
-      resultBox.style.background = "rgba(0, 200, 0, 0.3)";
-    } else if (prediction.toLowerCase().includes("mine")) {
-      resultBox.style.background = "rgba(200, 0, 0, 0.3)";
-    } else {
-      resultBox.style.background = "rgba(255,255,255,0.2)";
-    }
-
-    resultBox.innerText = "✅ " + prediction;
-
-    anime({
-      targets: '#result',
-      scale: [0.5, 1],
-      opacity: [0, 1],
-      duration: 800,
-      easing: 'easeOutElastic'
-    });
-  } catch (err) {
-    resultBox.innerText = "❌ Error: " + err.message;
-  }
-}
-
   </script>
 </body>
 </html>
