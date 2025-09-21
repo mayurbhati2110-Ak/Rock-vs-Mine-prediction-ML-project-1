@@ -7,7 +7,7 @@
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(135deg, #6dd5ed, #2193b0);
+      background: linear-gradient(135deg, #1e3c72, #2a5298);
       color: #fff;
       display: flex;
       flex-direction: column;
@@ -15,11 +15,20 @@
       padding: 30px;
       min-height: 100vh;
       margin: 0;
+      animation: fadeIn 1.5s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
     }
     h1 {
-      font-size: 2.5rem;
+      font-size: 2.8rem;
       margin-bottom: 20px;
-      text-shadow: 2px 2px 6px rgba(0,0,0,0.3);
+      text-shadow: 2px 2px 10px rgba(0,0,0,0.4);
+    }
+    p {
+      font-size: 1.1rem;
+      margin: 10px 0 5px;
     }
     select, textarea {
       width: 80%;
@@ -29,45 +38,52 @@
       font-size: 1rem;
       outline: none;
       margin-bottom: 15px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      transition: transform 0.2s;
+    }
+    select:hover, textarea:hover {
+      transform: scale(1.02);
     }
     textarea {
       height: 100px;
+      resize: none;
     }
     button {
       padding: 12px 25px;
       font-size: 1.2rem;
       border: none;
       border-radius: 25px;
-      background: #ff7e5f;
+      background: linear-gradient(45deg, #ff7e5f, #feb47b);
       color: white;
       cursor: pointer;
-      transition: 0.3s;
+      transition: transform 0.3s, box-shadow 0.3s;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
     button:hover {
-      background: #feb47b;
-      transform: scale(1.05);
+      transform: scale(1.07);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.4);
     }
     #result {
-      margin-top: 20px;
-      font-size: 1.5rem;
+      margin-top: 25px;
+      font-size: 1.6rem;
       font-weight: bold;
       padding: 15px 20px;
       border-radius: 12px;
-      background: rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.15);
       display: none;
     }
   </style>
 </head>
 <body>
-  <h1>Rock vs Mine Predictor</h1>
+  <h1>🪨 Rock vs Mine Predictor ⛏️</h1>
 
-  <p>🔽 Pick a sample from dataset:</p>
+  <p>🔽 Pick a random dataset sample:</p>
   <select id="sampleDropdown">
     <option>Loading samples...</option>
   </select>
 
-  <p>Or enter your own values (60 comma-separated):</p>
-  <textarea id="inputValues" placeholder="Enter 60 values here"></textarea>
+  <p>✍️ Or enter your own 60 values (comma-separated):</p>
+  <textarea id="inputValues" placeholder="Enter 60 values here..."></textarea>
   
   <br>
   <button onclick="predict()">🔮 Predict</button>
@@ -77,10 +93,19 @@
     const dropdown = document.getElementById("sampleDropdown");
     const textarea = document.getElementById("inputValues");
 
-    // ✅ Load CSV and balance samples
+    // Shuffle helper
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    // Load CSV
     fetch("./Sonar Dataset.csv")
       .then(res => {
-        if (!res.ok) throw new Error("CSV not found. Make sure 'Sonar Dataset.csv' is in the same folder as index.html.");
+        if (!res.ok) throw new Error("CSV not found. Ensure 'Sonar Dataset.csv' is in the same folder as index.html.");
         return res.text();
       })
       .then(data => {
@@ -89,7 +114,7 @@
         let rockSamples = [];
         let mineSamples = [];
 
-        rows.forEach((row) => {
+        rows.forEach(row => {
           const cols = row.split(",");
           const label = cols[60];
           const features = cols.slice(0, 60).join(",");
@@ -97,12 +122,15 @@
           if (label === "M") mineSamples.push({ label, features });
         });
 
-        // ✅ Take first 10 Rock + first 10 Mine
+        // Shuffle both groups
+        rockSamples = shuffle(rockSamples);
+        mineSamples = shuffle(mineSamples);
+
+        // Take 10 random Rock + 10 random Mine
         const selected = rockSamples.slice(0, 10).concat(mineSamples.slice(0, 10));
 
-        // Clear dropdown
+        // Fill dropdown
         dropdown.innerHTML = "";
-
         selected.forEach((s, i) => {
           const option = document.createElement("option");
           option.value = s.features;
@@ -110,7 +138,7 @@
           dropdown.appendChild(option);
         });
 
-        // Pre-fill textarea
+        // Pre-fill textarea with first sample
         if (selected.length > 0) {
           textarea.value = selected[0].features;
         }
@@ -137,7 +165,7 @@
         return;
       }
 
-      const apiUrl = "https://<your-username>-<your-space-name>.hf.space/run/predict"; // 🔗 CHANGE THIS
+      const apiUrl = "https://<your-username>-<your-space-name>.hf.space/run/predict"; // 🔹 CHANGE THIS
 
       document.getElementById("result").style.display = "block";
       document.getElementById("result").innerText = "⏳ Predicting...";
