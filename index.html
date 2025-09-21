@@ -71,6 +71,7 @@
       border-radius: 12px;
       background: rgba(255,255,255,0.15);
       display: none;
+      transition: background 0.5s;
     }
   </style>
 </head>
@@ -165,7 +166,7 @@
         return;
       }
 
-      const apiUrl = "https://mayurbhati2110-RockvsMine.hf.space/run/predict"; // 🔹 CHANGE THIS
+      const apiUrl = "https://mayurbhati2110-RockvsMine.hf.space/api/predict/"; // ✅ Correct endpoint
 
       document.getElementById("result").style.display = "block";
       document.getElementById("result").innerText = "⏳ Predicting...";
@@ -179,7 +180,18 @@
         const result = await response.json();
         const prediction = result.data[0];
 
-        document.getElementById("result").innerText = "✅ " + prediction;
+        const resultBox = document.getElementById("result");
+
+        // 🎨 Color-coded result
+        if (prediction.toLowerCase().includes("rock")) {
+          resultBox.style.background = "rgba(0, 200, 0, 0.3)";
+        } else if (prediction.toLowerCase().includes("mine")) {
+          resultBox.style.background = "rgba(200, 0, 0, 0.3)";
+        } else {
+          resultBox.style.background = "rgba(255,255,255,0.2)";
+        }
+
+        resultBox.innerText = "✅ " + prediction;
 
         anime({
           targets: '#result',
