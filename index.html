@@ -155,55 +155,64 @@
     });
 
     async function predict() {
-      const input = textarea.value.trim();
-      if (!input) {
-        alert("Please enter values!");
-        return;
-      }
-      const values = input.split(",").map(v => parseFloat(v.trim()));
-      if (values.length !== 60) {
-        alert("⚠️ You must enter exactly 60 values!");
-        return;
-      }
+  const input = textarea.value.trim();
+  if (!input) {
+    alert("Please enter values!");
+    return;
+  }
+  const values = input.split(",").map(v => parseFloat(v.trim()));
+  if (values.length !== 60) {
+    alert("⚠️ You must enter exactly 60 values!");
+    return;
+  }
 
-      const apiUrl = "https://mayurbhati2110-RockvsMine.hf.space/api/predict/"; // ✅ Correct endpoint
+  const apiUrl = "https://mayurbhati2110-RockvsMine.hf.space/api/predict/";
 
-      document.getElementById("result").style.display = "block";
-      document.getElementById("result").innerText = "⏳ Predicting...";
+  const resultBox = document.getElementById("result");
+  resultBox.style.display = "block";
+  resultBox.innerText = "⏳ Predicting...";
 
-      try {
-        const response = await fetch(apiUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ data: [input] })
-        });
-        const result = await response.json();
-        const prediction = result.data[0];
+  try {
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ data: [input] })
+    });
 
-        const resultBox = document.getElementById("result");
+    const result = await response.json();
+    console.log("API Response:", result); // 🔍 Debugging line
 
-        // 🎨 Color-coded result
-        if (prediction.toLowerCase().includes("rock")) {
-          resultBox.style.background = "rgba(0, 200, 0, 0.3)";
-        } else if (prediction.toLowerCase().includes("mine")) {
-          resultBox.style.background = "rgba(200, 0, 0, 0.3)";
-        } else {
-          resultBox.style.background = "rgba(255,255,255,0.2)";
-        }
-
-        resultBox.innerText = "✅ " + prediction;
-
-        anime({
-          targets: '#result',
-          scale: [0.5, 1],
-          opacity: [0, 1],
-          duration: 800,
-          easing: 'easeOutElastic'
-        });
-      } catch (err) {
-        document.getElementById("result").innerText = "❌ Error: " + err.message;
-      }
+    // ✅ Handle flexible response
+    let prediction = "Unknown";
+    if (result.data && result.data.length > 0) {
+      prediction = result.data[0];
+    } else if (result.output && result.output.data) {
+      prediction = result.output.data[0];
     }
+
+    // 🎨 Color-coded result
+    if (prediction.toLowerCase().includes("rock")) {
+      resultBox.style.background = "rgba(0, 200, 0, 0.3)";
+    } else if (prediction.toLowerCase().includes("mine")) {
+      resultBox.style.background = "rgba(200, 0, 0, 0.3)";
+    } else {
+      resultBox.style.background = "rgba(255,255,255,0.2)";
+    }
+
+    resultBox.innerText = "✅ " + prediction;
+
+    anime({
+      targets: '#result',
+      scale: [0.5, 1],
+      opacity: [0, 1],
+      duration: 800,
+      easing: 'easeOutElastic'
+    });
+  } catch (err) {
+    resultBox.innerText = "❌ Error: " + err.message;
+  }
+}
+
   </script>
 </body>
 </html>
