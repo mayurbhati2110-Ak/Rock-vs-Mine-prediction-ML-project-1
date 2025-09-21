@@ -62,7 +62,9 @@
   <h1>Rock vs Mine Predictor</h1>
 
   <p>🔽 Pick a sample from dataset:</p>
-  <select id="sampleDropdown"></select>
+  <select id="sampleDropdown">
+    <option>Loading samples...</option>
+  </select>
 
   <p>Or enter your own values (60 comma-separated):</p>
   <textarea id="inputValues" placeholder="Enter 60 values here"></textarea>
@@ -75,15 +77,22 @@
     const dropdown = document.getElementById("sampleDropdown");
     const textarea = document.getElementById("inputValues");
 
-    // Load CSV file from GitHub Pages (must be in same repo as index.html)
-    fetch("Sonar Dataset.csv")
-      .then(res => res.text())
+    // ✅ Ensure correct relative path (works if CSV is in same folder as index.html)
+    fetch("./Sonar Dataset.csv")
+      .then(res => {
+        if (!res.ok) throw new Error("CSV not found. Make sure 'Sonar Dataset.csv' is in the same repo folder as index.html.");
+        return res.text();
+      })
       .then(data => {
         const rows = data.trim().split("\n");
-        // Take first 20 samples for dropdown
+
+        // Clear default option
+        dropdown.innerHTML = "";
+
+        // Take first 20 samples
         rows.slice(0, 20).forEach((row, i) => {
           const cols = row.split(",");
-          const label = cols[60]; // Last column is label (R or M)
+          const label = cols[60]; // last column
           const features = cols.slice(0, 60).join(",");
           const option = document.createElement("option");
           option.value = features;
@@ -91,11 +100,15 @@
           dropdown.appendChild(option);
         });
 
-        // Auto-fill textarea with first sample
+        // Pre-fill textarea with first sample
         textarea.value = dropdown.options[0].value;
+      })
+      .catch(err => {
+        dropdown.innerHTML = "<option>Error loading CSV</option>";
+        console.error(err);
       });
 
-    // Update textarea when dropdown changes
+    // Sync dropdown → textarea
     dropdown.addEventListener("change", () => {
       textarea.value = dropdown.value;
     });
