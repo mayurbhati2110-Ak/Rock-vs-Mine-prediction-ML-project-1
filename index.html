@@ -77,31 +77,43 @@
     const dropdown = document.getElementById("sampleDropdown");
     const textarea = document.getElementById("inputValues");
 
-    // ✅ Ensure correct relative path (works if CSV is in same folder as index.html)
+    // ✅ Load CSV and balance samples
     fetch("./Sonar Dataset.csv")
       .then(res => {
-        if (!res.ok) throw new Error("CSV not found. Make sure 'Sonar Dataset.csv' is in the same repo folder as index.html.");
+        if (!res.ok) throw new Error("CSV not found. Make sure 'Sonar Dataset.csv' is in the same folder as index.html.");
         return res.text();
       })
       .then(data => {
         const rows = data.trim().split("\n");
 
-        // Clear default option
+        let rockSamples = [];
+        let mineSamples = [];
+
+        rows.forEach((row) => {
+          const cols = row.split(",");
+          const label = cols[60];
+          const features = cols.slice(0, 60).join(",");
+          if (label === "R") rockSamples.push({ label, features });
+          if (label === "M") mineSamples.push({ label, features });
+        });
+
+        // ✅ Take first 10 Rock + first 10 Mine
+        const selected = rockSamples.slice(0, 10).concat(mineSamples.slice(0, 10));
+
+        // Clear dropdown
         dropdown.innerHTML = "";
 
-        // Take first 20 samples
-        rows.slice(0, 20).forEach((row, i) => {
-          const cols = row.split(",");
-          const label = cols[60]; // last column
-          const features = cols.slice(0, 60).join(",");
+        selected.forEach((s, i) => {
           const option = document.createElement("option");
-          option.value = features;
-          option.text = `Sample ${i+1} (${label})`;
+          option.value = s.features;
+          option.text = `Sample ${i+1} (${s.label})`;
           dropdown.appendChild(option);
         });
 
-        // Pre-fill textarea with first sample
-        textarea.value = dropdown.options[0].value;
+        // Pre-fill textarea
+        if (selected.length > 0) {
+          textarea.value = selected[0].features;
+        }
       })
       .catch(err => {
         dropdown.innerHTML = "<option>Error loading CSV</option>";
@@ -125,7 +137,7 @@
         return;
       }
 
-      const apiUrl = "https://<your-username>-<your-space-name>.hf.space/run/predict"; // CHANGE THIS
+      const apiUrl = "https://<your-username>-<your-space-name>.hf.space/run/predict"; // 🔗 CHANGE THIS
 
       document.getElementById("result").style.display = "block";
       document.getElementById("result").innerText = "⏳ Predicting...";
